@@ -3,20 +3,22 @@ import math
 import numpy as np
 from scipy import misc
 import argparse
+import bisect
 # from sqlalchemy import all_, false
 
 """Setup"""
 
 # Number of coins
-num_coins = 100
+num_coins = 50
 # Length of distribution
-n = 10000
+# TODO should change this so that num-coins instead uses the letter n
+n = 1000
 # Number of draws for c_0
-m = 10000
+m = 10
 # Portion of the (1-alpha) network that we know
-beta = 0.5
+beta = 1
 # reward for revealing one coin
-x = 1
+x = 0
 
 # if lambda = alpha then expected reward of honest should be 0
 # b/c the honest strategy gets alpha per round
@@ -25,18 +27,21 @@ x = 1
 # we want to subtract a total of alpha per round. 
 # so lambda = 0 is the same as subtracting alpha per round
 
-def g(rewards, coins, alpha, c_0):
-  # find i s.t. c_i < c_0 < c_{i+1}
-  i = 1
-  for j in range(len(coins)):
-    if coins[j] < c_0:
-      i = j
-  
+def find_i_min(c_0, c):
+  i_min = 0
+  for i in range(len(c)):
+    if c[i] < c_0:
+      i_min = i
+  return -1
+
+def g(rewards, coins, alpha, c_pos):
   # find g value 
   largest =  float('-inf')
-  for j in range(len(coins)-1):
+  for j in range(c_pos+1):
     # not j - 1 because j starts at 0
     current = -1 * x * j + (1+rewards[j]) * math.exp(-1 * (1-beta) * (1-alpha) * coins[j])
+    # print("exponent" , -1 * (1-beta) * (1-alpha) * coins[j])
+    # print("possible g for index " + str(j), current)
     largest = max(current, largest)
   return largest
 
@@ -46,16 +51,16 @@ def find_k(draws, r_h):
   for i in range(n):
     if draws[i] > r_h:
       return i
-  return n
+  return 0
 
-def h(c_0, r_0, i, alpha):
-  return -1 * x * i + r_0 * math.exp(-1 * (1-alpha) * (1-beta) * c_0)
+def h(c_0, r_0, i_min, alpha):
+  return -1 * x * i_min + r_0 * math.exp(-1 * (1-alpha) * (1-beta) * c_0)
 
-def sum_greater_r_h(k, i, D, c_0, alpha):
-  total = 0
-  for j in range(k, n):
-    total += h(c_0, D[j], i, alpha)
-  return total
+# def sum_greater_r_h(k, i, D, c_0, alpha):
+#   total = 0
+#   for j in range(k, n):
+#     total += h(c_0, D[j], i, alpha)
+#   return total
 
 """Update rule for OPTPLUS strategy"""
 def optplus_sim(D, alpha, l):
@@ -64,9 +69,10 @@ def optplus_sim(D, alpha, l):
   r = [0]*num_coins # (expected) reward values
   F = [0]*n # final distribution
 
+  # print(D)
   # make n draws from our distribution
-  for j in range(n):
-    # print(">>>>>>>>j=", j)
+  for i in range(n):
+    # print("drawing d^t_" + str(i))
     # step 1: draw c1 from exp(alpha)
     c[0] = np.random.exponential(scale=(1/alpha))
 
@@ -78,36 +84,57 @@ def optplus_sim(D, alpha, l):
     for k in range(num_coins):
       r[k] = D[np.random.randint(low=0, high=n)]
     
+    # print("C array:", c)
+    # print("R array", r)
+
     # step 4: estimate over m draws for c_0
     output_sum = 0
-    for i in range(m):
-      # print(">>>>>>>>>>i=", i)
-      # draw our c_0 
+
+    test_count = 0
+    for _ in range(m):
+      #TODO do some handling for beta = 0
       c_0 = np.random.exponential(scale=(1/(beta * (1-alpha))))
 
+      # what if there is no i_min? 
+      # TODO need to handle this case
+      i_min = find_i_min(c_0, c)
+
       # calculate g(c_0, c_-0, r_-0)
-      g_val = g(r, c, alpha, c_0) 
+      if i_min != -1:
+        g_val = g(r, c, alpha, i_min) 
+      else: 
+        g_val = 0 
 
       # calculate r_h value
-      r_h = (g_val + x * i) * math.exp((1-alpha)*(1-beta)*c_0)
+      r_h = (g_val + x * i_min) * math.exp((1-alpha)*(1-beta)*c_0)
 
-      # count number of draws that were < r_h
-      lower_count = sum(reward < r_h for reward in r)
+      # find our k value, that is count number of draws that were < r_h
+      num_greater = np.count_nonzero(np.array(r) > r_h)
+      k = num_greater - 1 if num_greater > 0 else 0
 
-      # find our k value
-      k = find_k(D, r_h)
-      if k == n:
-        # there is no r_i that is > r_h
-        inner_int = 0
-      else:
-        inner_int = sum_greater_r_h(k, i, D, c_0, alpha)
+      # get inner integral approximation
+      h_sums = 0
+      for j in range(num_coins):
+        h_sums += h(c_0, r[j], i_min, alpha)
 
+      # print("h_sums:",  h_sums)
+      # print("g_val", g_val )
+      # print("g_val * num_greater", g_val * num_greater)
       # add everything together for this iteration
-      output_sum += g_val * lower_count + (1/(n-k+1) * inner_int)
+      output_sum += g_val * num_greater + h_sums 
+      # if test_count == 0:
+      #   print("c_0", c_0)
+      #   print("i_min", i_min)
+      #   print("g_val", g_val)
+      #   print("r_h", r_h)
+      #   print("num_greater", num_greater)
+      #   print("h_sums", h_sums)
+      test_count += 1
+      
+    draw = output_sum / (m * num_coins) - alpha - l
+    F[i] = draw
 
-    draw = output_sum / (m * n) - alpha - l
-    F[j] = draw
-
+  # print(F)
   return F
 
 # Simulates expected rewards for given alpha and lambda.
