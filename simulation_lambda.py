@@ -27,43 +27,17 @@ x = 0
 # we want to subtract a total of alpha per round. 
 # so lambda = 0 is the same as subtracting alpha per round
 
-# def find_i_min(c_0, c):
-#   if c[0] > c_0:
-#     return -1 
-#   i_min = 0
-#   for i in range(len(c)):
-#     if c[i] < c_0:
-#       i_min = i
-#     else:
-#       return i_min
-
 def g(rewards, coins, alpha, c_pos):
   # find g value 
   largest =  float('-inf')
   for j in range(c_pos):
     # not j - 1 because j starts at 0
     current = -1 * x * j + (1+rewards[j]) * math.exp(-1 * (1-beta) * (1-alpha) * coins[j])
-    # print("exponent" , -1 * (1-beta) * (1-alpha) * coins[j])
-    # print("possible g for index " + str(j), current)
     largest = max(current, largest)
   return largest
 
-def find_k(draws, r_h):
-  # print(draws[-100:])
-  # print(r_h)
-  for i in range(n):
-    if draws[i] > r_h:
-      return i
-  return 0
-
 def h(c_0, r_0, i_min, alpha):
   return -1 * x * i_min + r_0 * math.exp(-1 * (1-alpha) * (1-beta) * c_0)
-
-# def sum_greater_r_h(k, i, D, c_0, alpha):
-#   total = 0
-#   for j in range(k, n):
-#     total += h(c_0, D[j], i, alpha)
-#   return total
 
 """Update rule for OPTPLUS strategy"""
 def optplus_sim(D, alpha, l):
@@ -72,7 +46,6 @@ def optplus_sim(D, alpha, l):
   r = [0]*num_coins # (expected) reward values
   F = [0]*n # final distribution
 
-  # print(D)
   # make n draws from our distribution
   for i in range(n):
     # step 1: draw c1 from exp(alpha)
@@ -85,80 +58,44 @@ def optplus_sim(D, alpha, l):
     # step 3: for all i >= 1, draw r_i from D iid
     for k in range(num_coins):
       r[k] = D[np.random.randint(low=0, high=n)]
-    
-    # print("C array:", c)
-    # print("R array", r)
 
     # step 4: estimate over m draws for c_0
     output_sum = 0
 
-    test_count = 0
     for _ in range(m):
       #TODO do some handling for beta = 0
       c_0 = np.random.exponential(scale=(1/(beta * (1-alpha))))
-      # print("c_0:",c_0)
 
       # what if there is no i_min? 
       # TODO need to handle this case
+
       # find an i_min s.t. c_{i_min} < c_0 < _{i_min + 1}
       i_min = bisect.bisect_left(c, c_0) if beta != 0 else num_coins
-      # print("c:",c)
-      # print("i_min:",i_min)
 
       # calculate g(c_0, c_-0, r_-0)
       # if i_min = 0 that means that there is no i s.t. c_i < c_0. 
       # Therefore the adversary has no coins that would win over Beta portion of the network
       # so we should definitely allow the network's coin to win (rather, we HAVE to) --> g= 0
+      g_val = 0
       if i_min > 0:
         g_val = g(r, c, alpha, i_min) 
-        cats_g =  np.max([np.exp(c[s]*(alpha-1)*(1-beta))*(1+r[s]) - x*s for s in range(i_min)])
-        if cats_g != g_val:
-          print("G ERROR!")
-          print(cats_g, g_val)
-      else: 
-        g_val = 0 
-      
-      # print("G:", g_val)
 
       # calculate r_h value
       r_h = (g_val + x * i_min) * math.exp((1-alpha)*(1-beta)*c_0)
-      cats_r_h = (g_val + x*i_min) * np.exp((1-alpha)*(1-beta)*c_0)
-      if r_h != cats_r_h:
-        print("R_H ERROR")
-      # print("r_h:",r_h)
-      # print("cats_r_h:", cats_r_h)
 
       # find our k value
       k = np.count_nonzero(np.array(D) < r_h)
-      cats_k = np.count_nonzero(np.array(D) < r_h)
-      if k != cats_k:
-        print(k, cats_k)
-        print("K ERROR")
-      # print("--------")
 
       # get inner integral approximation
       h_sums = 0
       for j in range(k, num_coins):
         h_sums += h(c_0, r[j], i_min, alpha)
 
-      # print("h_sums:",  h_sums)
-      # print("g_val", g_val )
-      # print("g_val * num_greater", g_val * num_greater)
-      # add everything together for this iteration
       output_sum += g_val * k + h_sums 
-      # if test_count == 0:
-      #   print("c_0", c_0)
-      #   print("i_min", i_min)
-      #   print("g_val", g_val)
-      #   print("r_h", r_h)
-      #   print("num_greater", num_greater)
-      #   print("h_sums", h_sums)
-      test_count += 1
       
     draw = output_sum / (m * n) - alpha - l
     F[i] = draw
 
-  # print(F)
   return F
 
 # Simulates expected rewards for given alpha and lambda.
@@ -300,7 +237,7 @@ def main():
   else:
   # gather_data(optplus_sim, difference=0.01, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
     distributions = np.load("OPTPLUS distributions 0.01 to 1.0.npy")
-    gather_data_from_given_start(distributions, optplus_sim, start_alpha=0.33, 
+    gather_data_from_given_start(distributions, optplus_sim, start_alpha=0.2, 
     difference=0.01, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
 
 
