@@ -16,7 +16,7 @@ n = 1000
 # Number of draws for c_0
 m = 10
 # Portion of the (1-alpha) network that we know
-beta = 1
+beta = 0.5
 # reward for revealing one coin
 x = 0
 
@@ -27,17 +27,20 @@ x = 0
 # we want to subtract a total of alpha per round. 
 # so lambda = 0 is the same as subtracting alpha per round
 
-def find_i_min(c_0, c):
-  i_min = 0
-  for i in range(len(c)):
-    if c[i] < c_0:
-      i_min = i
-  return -1
+# def find_i_min(c_0, c):
+#   if c[0] > c_0:
+#     return -1 
+#   i_min = 0
+#   for i in range(len(c)):
+#     if c[i] < c_0:
+#       i_min = i
+#     else:
+#       return i_min
 
 def g(rewards, coins, alpha, c_pos):
   # find g value 
   largest =  float('-inf')
-  for j in range(c_pos+1):
+  for j in range(c_pos):
     # not j - 1 because j starts at 0
     current = -1 * x * j + (1+rewards[j]) * math.exp(-1 * (1-beta) * (1-alpha) * coins[j])
     # print("exponent" , -1 * (1-beta) * (1-alpha) * coins[j])
@@ -72,7 +75,6 @@ def optplus_sim(D, alpha, l):
   # print(D)
   # make n draws from our distribution
   for i in range(n):
-    # print("drawing d^t_" + str(i))
     # step 1: draw c1 from exp(alpha)
     c[0] = np.random.exponential(scale=(1/alpha))
 
@@ -94,34 +96,56 @@ def optplus_sim(D, alpha, l):
     for _ in range(m):
       #TODO do some handling for beta = 0
       c_0 = np.random.exponential(scale=(1/(beta * (1-alpha))))
+      # print("c_0:",c_0)
 
       # what if there is no i_min? 
       # TODO need to handle this case
-      i_min = find_i_min(c_0, c)
+      # find an i_min s.t. c_{i_min} < c_0 < _{i_min + 1}
+      i_min = bisect.bisect_left(c, c_0) if beta != 0 else num_coins
+      # print("c:",c)
+      # print("i_min:",i_min)
 
       # calculate g(c_0, c_-0, r_-0)
-      if i_min != -1:
+      # if i_min = 0 that means that there is no i s.t. c_i < c_0. 
+      # Therefore the adversary has no coins that would win over Beta portion of the network
+      # so we should definitely allow the network's coin to win (rather, we HAVE to) --> g= 0
+      if i_min > 0:
         g_val = g(r, c, alpha, i_min) 
+        cats_g =  np.max([np.exp(c[s]*(alpha-1)*(1-beta))*(1+r[s]) - x*s for s in range(i_min)])
+        if cats_g != g_val:
+          print("G ERROR!")
+          print(cats_g, g_val)
       else: 
         g_val = 0 
+      
+      # print("G:", g_val)
 
       # calculate r_h value
       r_h = (g_val + x * i_min) * math.exp((1-alpha)*(1-beta)*c_0)
+      cats_r_h = (g_val + x*i_min) * np.exp((1-alpha)*(1-beta)*c_0)
+      if r_h != cats_r_h:
+        print("R_H ERROR")
+      # print("r_h:",r_h)
+      # print("cats_r_h:", cats_r_h)
 
-      # find our k value, that is count number of draws that were < r_h
-      num_greater = np.count_nonzero(np.array(r) > r_h)
-      k = num_greater - 1 if num_greater > 0 else 0
+      # find our k value
+      k = np.count_nonzero(np.array(D) < r_h)
+      cats_k = np.count_nonzero(np.array(D) < r_h)
+      if k != cats_k:
+        print(k, cats_k)
+        print("K ERROR")
+      # print("--------")
 
       # get inner integral approximation
       h_sums = 0
-      for j in range(num_coins):
+      for j in range(k, num_coins):
         h_sums += h(c_0, r[j], i_min, alpha)
 
       # print("h_sums:",  h_sums)
       # print("g_val", g_val )
       # print("g_val * num_greater", g_val * num_greater)
       # add everything together for this iteration
-      output_sum += g_val * num_greater + h_sums 
+      output_sum += g_val * k + h_sums 
       # if test_count == 0:
       #   print("c_0", c_0)
       #   print("i_min", i_min)
@@ -131,7 +155,7 @@ def optplus_sim(D, alpha, l):
       #   print("h_sums", h_sums)
       test_count += 1
       
-    draw = output_sum / (m * num_coins) - alpha - l
+    draw = output_sum / (m * n) - alpha - l
     F[i] = draw
 
   # print(F)
