@@ -3,6 +3,8 @@ import numpy as np
 import bisect
 import math
 
+# TODO need to code in the honest strategy here (ie. where beta = 0)
+
 # HASH_PLUS_SAMPLE
 def g(rewards, coins, alpha, beta, c_pos):
   # find g value 
@@ -35,41 +37,46 @@ def sim(D, alpha, beta, l):
     for k in range(num_coins):
       r[k] = D[np.random.randint(low=0, high=n)]
 
-    # step 4: estimate over m draws for c_0
+
     output_sum = 0
 
-    for _ in range(m):
-      #TODO do some handling for beta = 0
-      c_0 = np.random.exponential(scale=(1/(beta * (1-alpha))))
+    if beta == 0:
+      F[i] = g(r,c,alpha, beta, num_coins) - l - alpha
+    # step 4: estimate over m draws for c_0
+    else:
+      for _ in range(m):
+        #TODO do some handling for beta = 0
+        # if beta = 0, we should use the honest strategy (ie. our LOWEST coin)
+        c_0 = np.random.exponential(scale=(1/(beta * (1-alpha))))
 
-      # what if there is no i_min? 
-      # TODO need to handle this case
+        # what if there is no i_min? 
+        # TODO need to handle this case
 
-      # find an i_min s.t. c_{i_min} < c_0 < _{i_min + 1}
-      i_min = bisect.bisect_left(c, c_0) if beta != 0 else num_coins
+        # find an i_min s.t. c_{i_min} < c_0 < _{i_min + 1}
+        i_min = bisect.bisect_left(c, c_0) if beta != 0 else num_coins
 
-      # calculate g(c_0, c_-0, r_-0)
-      # if i_min = 0 that means that there is no i s.t. c_i < c_0. 
-      # Therefore the adversary has no coins that would win over Beta portion of the network
-      # so we should definitely allow the network's coin to win (rather, we HAVE to) --> g= 0
-      g_val = 0
-      if i_min > 0:
-        g_val = g(r, c, alpha, beta, i_min) 
+        # calculate g(c_0, c_-0, r_-0)
+        # if i_min = 0 that means that there is no i s.t. c_i < c_0. 
+        # Therefore the adversary has no coins that would win over Beta portion of the network
+        # so we should definitely allow the network's coin to win (rather, we HAVE to) --> g= 0
+        g_val = 0
+        if i_min > 0:
+          g_val = g(r, c, alpha, beta, i_min) 
 
-      # calculate r_h value
-      r_h = (g_val + x * i_min) * math.exp((1-alpha)*(1-beta)*c_0)
+        # calculate r_h value
+        r_h = (g_val + x * i_min) * math.exp((1-alpha)*(1-beta)*c_0)
 
-      # find our k value
-      k = np.count_nonzero(np.array(D) < r_h)
+        # find our k value
+        k = np.count_nonzero(np.array(D) < r_h)
 
-      # get inner integral approximation
-      h_sums = 0
-      for j in range(k, num_coins):
-        h_sums += h(c_0, r[j], i_min, alpha, beta)
+        # get inner integral approximation
+        h_sums = 0
+        for j in range(k, num_coins):
+          h_sums += h(c_0, r[j], i_min, alpha, beta)
 
-      output_sum += g_val * k + h_sums 
-      
-    draw = output_sum / (m * n) - alpha - l
-    F[i] = draw
+        output_sum += g_val * k + h_sums 
+        
+      draw = output_sum / (m * n) - alpha - l
+      F[i] = draw
 
   return F

@@ -3,7 +3,7 @@ import math
 import numpy as np
 from scipy import misc
 import argparse
-from strategies import hash_plus_sample
+from strategies import hash_plus_sample, hash_plus_exact
 from strategies.constants import m, n, x, num_coins
 # from sqlalchemy import all_, false
 
@@ -132,12 +132,12 @@ def gather_data_from_given_start(distributions, strategy_sim, start_alpha, beta,
     np.save(output_file_name, distributions)
     
 
-def run_once(alpha, beta, l, difference, times, debug_flag):
+def run_once(alpha, beta, l, difference, times, debug_flag, sim):
   print("RUNNING ONCE")
   if debug_flag: print("ALPHA: ", alpha)
   if debug_flag: print("Lambda: ", l)
 
-  r = simulate(alpha, beta, l, hash_plus_sample.sim, difference, times, debug_flag)
+  r = simulate(alpha, beta, l, sim, difference, times, debug_flag)
 
   if debug_flag: print("Reward for ", l, ": ", r)
 
@@ -145,16 +145,23 @@ def main():
   parser = argparse.ArgumentParser()
 
   parser.add_argument('--run_once', action='store_true')
-  parser.add_argument('--alpha', type=float, required=False)
-  parser.add_argument('--l', type=float, required=False)
+  parser.add_argument('--hash_plus_sample', action='store_true')
+  parser.add_argument('--hash_plus_exact', action='store_true')
+  parser.add_argument('--alpha', type=float, required=False, default=0.2)
+  parser.add_argument('--l', type=float, required=False, default=0.5)
+  parser.add_argument('--b', type=float, required=False, default=0.5)
   args = parser.parse_args()
 
+  sim = hash_plus_sample.sim
+  if args.hash_plus_exact:
+    sim = hash_plus_exact.sim
+
   if args.run_once:
-    run_once(args.alpha, args.l, beta=0.5, difference=0.01, times=4, debug_flag=True)
+    run_once(args.alpha, beta=args.b, l=args.l, difference=0.01, times=4, debug_flag=True, sim=sim)
   else:
-  # gather_data(optplus_sim, difference=0.01, beta=0.5, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
+    # gather_data(optplus_sim, difference=0.01, beta=0.5, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
     distributions = np.load("OPTPLUS distributions 0.01 to 1.0.npy")
-    gather_data_from_given_start(distributions, hash_plus_sample.sim, start_alpha=0.2, beta=0.5,
+    gather_data_from_given_start(distributions, sim, start_alpha=args.alpha, beta=args.b,
     difference=0.01, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
 
 
