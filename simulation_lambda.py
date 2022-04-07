@@ -141,10 +141,41 @@ def run_once(alpha, beta, l, difference, times, debug_flag, sim):
 
   if debug_flag: print("Reward for ", l, ": ", r)
 
+def single_alpha_run(alpha, beta, strategy_sim, difference, times, debug_flag, end_lambda = 1):
+  if debug_flag: print("Alpha: ", alpha)
+
+  # binary search for lambda
+  l = 0
+  start = 0
+  end = end_lambda
+
+  while (start <= end):
+    l = (start + end)/2
+    if debug_flag: print("Lambda: ", l)
+
+    bestF = simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag)
+    reward = np.average(bestF)
+
+    if debug_flag: print("Reward for ", l, ": ", reward)
+    
+    # arbitrary error diff
+    if abs(reward) < 0.01:
+      break
+
+    if start == end: break
+
+    if reward > 0:
+      start = l
+    else:
+      end = l
+
+  if debug_flag: print("LAST lambda was ", l)
+
 def main():
   parser = argparse.ArgumentParser()
 
   parser.add_argument('--run_once', action='store_true')
+  parser.add_argument('--single_alpha_run', action='store_true')
   parser.add_argument('--hash_plus_sample', action='store_true')
   parser.add_argument('--hash_plus_exact', action='store_true')
   parser.add_argument('--alpha', type=float, required=False, default=0.2)
@@ -158,6 +189,8 @@ def main():
 
   if args.run_once:
     run_once(args.alpha, beta=args.b, l=args.l, difference=0.01, times=4, debug_flag=True, sim=sim)
+  elif args.single_alpha_run:
+    single_alpha_run(args.alpha, args.b, sim, difference=0.01, times=4, debug_flag=True, end_lambda = 1)
   else:
     # gather_data(optplus_sim, difference=0.01, beta=0.5, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
     distributions = np.load("OPTPLUS distributions 0.01 to 1.0.npy")
