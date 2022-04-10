@@ -4,7 +4,7 @@ import numpy as np
 from scipy import misc
 import argparse
 from strategies import hash_plus_sample, hash_plus_exact
-from strategies.constants import m, n, x, num_coins
+from strategies.constants import m, n, x, num_coins, close_to_zero
 # from sqlalchemy import all_, false
 
 
@@ -85,7 +85,7 @@ def gather_data(strategy_sim, difference, beta, times, output_file_name, debug_f
       if debug_flag: print("Reward for ", l, ": ", reward)
       
       # arbitrary error diff
-      if abs(reward) < 0.01:
+      if abs(reward) < close_to_zero:
         break
 
       if reward > 0:
@@ -122,7 +122,7 @@ def gather_data_from_given_start(distributions, strategy_sim, start_alpha, beta,
       if debug_flag: print("Reward for ", l, ": ", reward)
       
       # arbitrary error diff
-      if abs(reward) < 0.01:
+      if abs(reward) < close_to_zero:
         break
 
       if reward > 0:
@@ -168,7 +168,7 @@ def single_alpha_run(alpha, beta, strategy_sim, difference, times, debug_flag, e
     if debug_flag: print("Reward for ", l, ": ", reward)
     
     # arbitrary error diff
-    if abs(reward) < 0.01:
+    if abs(reward) < close_to_zero:
       break
 
     if start == end: break
