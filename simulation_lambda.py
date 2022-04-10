@@ -69,8 +69,14 @@ def gather_data(strategy_sim, difference, beta, times, output_file_name, debug_f
     start = 0
     end = 1
 
+    iteration = 0
+
     while (start <= end):
-      l = (start + end)/2
+      if iteration == 0:
+        l = 0.1
+      else:
+        l = (start + end)/2
+      iteration += 1
       if debug_flag: print("Lambda: ", l)
 
       bestF = simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag)
@@ -142,6 +148,7 @@ def run_once(alpha, beta, l, difference, times, debug_flag, sim):
   if debug_flag: print("Reward for ", l, ": ", r)
 
 def single_alpha_run(alpha, beta, strategy_sim, difference, times, debug_flag, end_lambda = 1):
+  if debug_flag: print("Beta", beta)
   if debug_flag: print("Alpha: ", alpha)
 
   # binary search for lambda
@@ -178,9 +185,11 @@ def main():
   parser.add_argument('--single_alpha_run', action='store_true')
   parser.add_argument('--hash_plus_sample', action='store_true')
   parser.add_argument('--hash_plus_exact', action='store_true')
+  parser.add_argument('--gather_data', action='store_true')
   parser.add_argument('--alpha', type=float, required=False, default=0.2)
   parser.add_argument('--l', type=float, required=False, default=0.5)
   parser.add_argument('--b', type=float, required=False, default=0.5)
+  parser.add_argument('--output_file', type=str, required=False)
   args = parser.parse_args()
 
   sim = hash_plus_sample.sim
@@ -191,6 +200,10 @@ def main():
     run_once(args.alpha, beta=args.b, l=args.l, difference=0.01, times=4, debug_flag=True, sim=sim)
   elif args.single_alpha_run:
     single_alpha_run(args.alpha, args.b, sim, difference=0.01, times=4, debug_flag=True, end_lambda = 1)
+  elif args.gather_data:
+    print("GATHER DATA")
+    print("output file name:", args.output_file)
+    gather_data(strategy_sim=sim, difference=0.01, beta=args.b, times=4, output_file_name=args.output_file, debug_flag=True)
   else:
     # gather_data(optplus_sim, difference=0.01, beta=0.5, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
     distributions = np.load("OPTPLUS distributions 0.01 to 1.0.npy")
