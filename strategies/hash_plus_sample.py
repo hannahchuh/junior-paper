@@ -7,13 +7,11 @@ import math
 
 # HASH_PLUS_SAMPLE
 def g(rewards, coins, alpha, beta, c_pos):
-  # find g value 
-  largest =  float('-inf')
-  for j in range(c_pos):
-    # not j - 1 because j starts at 0
-    current = -1 * x * j + (1+rewards[j]) * math.exp(-1 * (1-beta) * (1-alpha) * coins[j])
-    largest = max(current, largest)
-  return largest
+  # marginal reward for revealing the coins
+  # ie., -1 * x * j (not (j-1) because j starts at 0)
+  reveal_rewards = np.arange(c_pos) * -1 * x
+  g_vals = reveal_rewards + (1 + rewards[:c_pos]) * np.exp(coins[:c_pos] * -1 * (1-beta) * (1-alpha))
+  return np.max(g_vals)
 
 def h(c_0, r_0, i_min, alpha, beta):
   return  -1 * x * i_min + r_0 * math.exp(-1 * (1-alpha) * (1-beta) * c_0)
@@ -40,9 +38,9 @@ def cats(alpha, beta, c, r, D, c0):
   return (k, pos_c, g,r_pdf, g*k + r_pdf)
 
 def sim(D, alpha, beta, l):
-  D.sort()
-  c = [0]*num_coins # coin values
-  r = [0]*num_coins # (expected) reward values
+  # D.sort()
+  c = np.zeros(num_coins)# coin values
+  r = np.zeros(num_coins)# (expected) reward values
   F = np.zeros(n) # final distribution
 
   # make n draws from our distribution
@@ -93,9 +91,10 @@ def sim(D, alpha, beta, l):
         k = np.count_nonzero(np.array(D) < r_h)
 
         # get inner integral approximation
-        h_sums = 0
-        for j in range(k, len(D)):
-          h_sums += h(c_0, D[j], i_min, alpha, beta)
+        # h_sums = 0
+        # for j in range(k, len(D)):
+        #   h_sums += h(c_0, D[j], i_min, alpha, beta)
+        h_sums = np.sum(np.where(D >= r_h, -1 * x * i_min + D * np.exp(-1 * (1-alpha) * (1-beta) * c_0), 0.0))
 
         my_val = g_val * k + h_sums
         output_sum += g_val * k + h_sums 

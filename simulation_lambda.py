@@ -205,10 +205,12 @@ def main():
     print("output file name:", args.output_file)
     gather_data(strategy_sim=sim, difference=0.01, beta=args.b, times=4, output_file_name=args.output_file, debug_flag=True)
   else:
+    run_once(args.alpha, beta=args.b, l=args.l, difference=0.01, times=4, debug_flag=True, sim=sim)
+
     # gather_data(optplus_sim, difference=0.01, beta=0.5, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
-    distributions = np.load("OPTPLUS distributions 0.01 to 1.0.npy")
-    gather_data_from_given_start(distributions, sim, start_alpha=args.alpha, beta=args.b,
-    difference=0.01, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
+    # distributions = np.load("OPTPLUS distributions 0.01 to 1.0.npy")
+    # gather_data_from_given_start(distributions, sim, start_alpha=args.alpha, beta=args.b,
+    # difference=0.01, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
 
 
 if __name__ == "__main__":
