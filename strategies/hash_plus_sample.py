@@ -100,27 +100,27 @@ def sim(D, alpha, beta, l):
         output_sum += g_val * k + h_sums 
         
       # add catherine's 
-      cats_k, cats_i_min, cats_g, r_pdf, cats_val = cats(alpha ,beta, c, r, D, c_0)
-      if abs(h_sums - r_pdf) > 0.0001:
-        print("HSUMS ERROR")
-        print(h_sums, r_pdf)
+    #   cats_k, cats_i_min, cats_g, r_pdf, cats_val = cats(alpha ,beta, c, r, D, c_0)
+    #   if abs(h_sums - r_pdf) > 0.0001:
+    #     print("HSUMS ERROR")
+    #     print(h_sums, r_pdf)
 
-      if cats_g - k*g_val > 0.0001:
-        print("GVAL ERROR")
-        print(g_val, cats_g)
+    #   if cats_g - k*g_val > 0.0001:
+    #     print("GVAL ERROR")
+    #     print(g_val, cats_g)
 
-      if abs(my_val - cats_val) > 0.0001:
-        print("VAL ERROR")
-        print(k, cats_k, i_min, cats_i_min)
-        print(h_sums, k*g_val, my_val)
-        print(r_pdf, cats_g, cats_val)
-        print(my_val, cats_val)
-      cats_sum += cats_val
+    #   if abs(my_val - cats_val) > 0.0001:
+    #     print("VAL ERROR")
+    #     print(k, cats_k, i_min, cats_i_min)
+    #     print(h_sums, k*g_val, my_val)
+    #     print(r_pdf, cats_g, cats_val)
+    #     print(my_val, cats_val)
+    #   cats_sum += cats_val
 
-    if abs(output_sum- cats_sum) > 0.0001:
-      print("ERROR")
-      print("\toutput_sum", output_sum)
-      print("\tcats_sum", cats_sum)
+    # if abs(output_sum- cats_sum) > 0.0001:
+    #   print("ERROR")
+    #   print("\toutput_sum", output_sum)
+    #   print("\tcats_sum", cats_sum)
     draw = output_sum / (m * n) - alpha - l
     F[i] = draw
 

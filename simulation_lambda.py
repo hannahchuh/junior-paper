@@ -155,9 +155,11 @@ def single_alpha_run(alpha, beta, strategy_sim, difference, times, debug_flag, e
   l = 0
   start = 0
   end = end_lambda
+  first_iteration = True
 
   while (start <= end):
-    l = (start + end)/2
+    l = (start + end)/2 if not first_iteration else 0.125
+    first_iteration = False
     if debug_flag: print("Lambda: ", l)
 
     bestF = simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag)
