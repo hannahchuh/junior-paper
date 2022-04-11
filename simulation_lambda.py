@@ -158,7 +158,7 @@ def single_alpha_run(alpha, beta, strategy_sim, difference, times, debug_flag, e
   first_iteration = True
 
   while (start <= end):
-    l = (start + end)/2 if not first_iteration else 0.125
+    l = (start + end)/2 
     first_iteration = False
     if debug_flag: print("Lambda: ", l)
 
