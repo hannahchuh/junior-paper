@@ -5,6 +5,7 @@ from scipy import misc
 import argparse
 from strategies import hash_plus_sample, hash_plus_exact
 from strategies.constants import m, n, x, num_coins, close_to_zero
+from strategies.hash_plus_sample import memoized_c0
 # from sqlalchemy import all_, false
 
 
@@ -17,7 +18,7 @@ from strategies.constants import m, n, x, num_coins, close_to_zero
 
 # Simulates expected rewards for given alpha and lambda.
 def simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag):
-  D_honest = np.zeros(n)
+  D_honest = np.zeros(n) -l - alpha
   
   # run first iteration
   F0 = strategy_sim(D_honest, alpha, beta, l)
@@ -178,7 +179,9 @@ def single_alpha_run(alpha, beta, strategy_sim, difference, times, debug_flag, e
     else:
       end = l
 
-  if debug_flag: print("LAST lambda was ", l)
+  if debug_flag: 
+    print("LAST lambda was ", l)
+    np.save("output_dist.npy", bestF)
 
 def main():
   parser = argparse.ArgumentParser()
@@ -188,8 +191,10 @@ def main():
   parser.add_argument('--hash_plus_sample', action='store_true')
   parser.add_argument('--hash_plus_exact', action='store_true')
   parser.add_argument('--gather_data', action='store_true')
+  parser.add_argument('--gather_data_from_start', action='store_true')
   parser.add_argument('--alpha', type=float, required=False, default=0.2)
   parser.add_argument('--l', type=float, required=False, default=0.5)
+  parser.add_argument('--start', type=float, required=False, default=0.5)
   parser.add_argument('--b', type=float, required=False, default=0.5)
   parser.add_argument('--output_file', type=str, required=False)
   args = parser.parse_args()
@@ -202,6 +207,9 @@ def main():
     run_once(args.alpha, beta=args.b, l=args.l, difference=0.01, times=4, debug_flag=True, sim=sim)
   elif args.single_alpha_run:
     single_alpha_run(args.alpha, args.b, sim, difference=0.01, times=4, debug_flag=True, end_lambda = 1)
+  elif args.gather_data_from_start:
+    distributions = np.load(args.output_file)
+    gather_data_from_given_start(distributions, sim, args.start, args.b, difference=0.01, times=4, output_file_name=args.output_file, debug_flag=True)
   elif args.gather_data:
     print("GATHER DATA")
     print("output file name:", args.output_file)
