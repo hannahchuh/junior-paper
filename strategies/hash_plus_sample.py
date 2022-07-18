@@ -85,7 +85,7 @@ def draw_wrapper(D, alpha, beta, l,i):
   return draw
 
 
-def sim(D, alpha, beta, l):
+def sim(D, alpha, beta, l, num_cores):
   global memoized_c0
   c = np.zeros(num_coins)# coin values
   r = np.zeros(num_coins)# (expected) reward values
@@ -97,7 +97,7 @@ def sim(D, alpha, beta, l):
   #     memoized_c0[i] = np.random.exponential(scale=(1/(beta * (1-alpha))))
 
   draw_func = partial(draw_wrapper, D, alpha, beta, l)
-  with Pool(4) as p:
+  with Pool(num_cores) as p:
     new_F = p.map(draw_func, F)
   # end_time = time.time()
   # print(end_time-start_time)

@@ -17,11 +17,11 @@ from strategies.hash_plus_sample import memoized_c0
 # so lambda = 0 is the same as subtracting alpha per round
 
 # Simulates expected rewards for given alpha and lambda.
-def simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag):
+def simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag, num_cores):
   D_honest = np.zeros(n) -l - alpha
   
   # run first iteration
-  F0 = strategy_sim(D_honest, alpha, beta, l)
+  F0 = strategy_sim(D_honest, alpha, beta, l, num_cores)
 
   if debug_flag:
     print("FIRST ROUND EXPECTED REWARDS: ", np.average(F0))
@@ -33,7 +33,7 @@ def simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag):
   runs = 1
   runs_in_range = 0
   while abs(lastavg - currentavg) > difference or runs_in_range < times:
-    nowF = strategy_sim(bestF, alpha, beta, l)
+    nowF = strategy_sim(bestF, alpha, beta, l, num_cores)
     lastavg = np.average(bestF)
     currentavg = np.average(nowF)
     bestF = nowF
@@ -139,12 +139,12 @@ def gather_data_from_given_start(distributions, strategy_sim, start_alpha, beta,
     np.save(output_file_name, distributions)
     
 
-def run_once(alpha, beta, l, difference, times, debug_flag, sim):
+def run_once(alpha, beta, l, difference, times, debug_flag, sim, cores):
   print("RUNNING ONCE")
   if debug_flag: print("ALPHA: ", alpha)
   if debug_flag: print("Lambda: ", l)
 
-  r = simulate(alpha, beta, l, sim, difference, times, debug_flag)
+  r = simulate(alpha, beta, l, sim, difference, times, debug_flag, cores)
 
   if debug_flag: print("Reward for ", l, ": ", r)
 
@@ -197,6 +197,7 @@ def main():
   parser.add_argument('--start', type=float, required=False, default=0.5)
   parser.add_argument('--b', type=float, required=False, default=0.5)
   parser.add_argument('--output_file', type=str, required=False)
+  parser.add_argument('--cores', type=int, required=False, default=4)
   args = parser.parse_args()
 
   sim = hash_plus_sample.sim
@@ -215,7 +216,7 @@ def main():
     print("output file name:", args.output_file)
     gather_data(strategy_sim=sim, difference=0.01, beta=args.b, times=4, output_file_name=args.output_file, debug_flag=True)
   else:
-    run_once(args.alpha, beta=args.b, l=args.l, difference=0.01, times=4, debug_flag=True, sim=sim)
+    run_once(args.alpha, beta=args.b, l=args.l, difference=0.01, times=4, debug_flag=True, sim=sim, cores=args.cores)
 
     # gather_data(optplus_sim, difference=0.01, beta=0.5, times=4, output_file_name="OPTPLUS distributions 0.01 to 1.0.npy", debug_flag=True)
     # distributions = np.load("OPTPLUS distributions 0.01 to 1.0.npy")
