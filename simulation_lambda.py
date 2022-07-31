@@ -6,6 +6,7 @@ import argparse
 from strategies import hash_plus_sample, hash_plus_exact
 from strategies.constants import m, n, x, num_coins, close_to_zero
 from strategies.hash_plus_sample import memoized_c0
+import time
 # from sqlalchemy import all_, false
 
 
@@ -15,6 +16,9 @@ from strategies.hash_plus_sample import memoized_c0
 # for the honest strategy in this new format (since we subtract (lambda + alpha))
 # we want to subtract a total of alpha per round. 
 # so lambda = 0 is the same as subtracting alpha per round
+
+def print_alpha_header():
+  print("====================================")
 
 # Simulates expected rewards for given alpha and lambda.
 def simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag, num_cores):
@@ -57,7 +61,10 @@ def gather_data(strategy_sim, difference, beta, times, output_file_name, debug_f
 
   for num in range(1, 100): # multiples of 1/100
     alpha = num / 100
-    if debug_flag: print("ALPHA: ", alpha)
+    start_time = time.time()
+    if debug_flag: 
+      print_alpha_header()
+      print("ALPHA: ", alpha)
 
     # sanity check: reward should be 0 for lambda = alpha
     # l = alpha
@@ -94,7 +101,10 @@ def gather_data(strategy_sim, difference, beta, times, output_file_name, debug_f
       else:
         end = l
       
-    if debug_flag: print("LAST lambda was ", l)
+    if debug_flag: 
+      end_time = time.time()
+      print("LAST lambda was ", l)
+      print("TIME ELAPSED:", end_time-start_time)
 
     # Save the best distribution and corresponding lambda
     distributions[num-1][0] = l
@@ -106,7 +116,9 @@ def gather_data_from_given_start(distributions, strategy_sim, start_alpha, beta,
   for num in range(int(start_alpha*100), 100): # multiples of 1/100
     alpha = num / 100
     
-    if debug_flag: print("ALPHA: ", alpha)
+    if debug_flag: 
+      print_alpha_header()
+      print("ALPHA: ", alpha)
     
     # binary search for lambda
     l = 0  # same as mid
@@ -141,7 +153,8 @@ def gather_data_from_given_start(distributions, strategy_sim, start_alpha, beta,
 
 def run_once(alpha, beta, l, difference, times, debug_flag, sim, cores):
   print("RUNNING ONCE")
-  if debug_flag: print("ALPHA: ", alpha)
+  if debug_flag:
+    print("ALPHA: ", alpha)
   if debug_flag: print("Lambda: ", l)
 
   r = simulate(alpha, beta, l, sim, difference, times, debug_flag, cores)
