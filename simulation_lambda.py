@@ -52,7 +52,7 @@ def simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag, num_co
   return bestF
 
 # Run simulation for alpha = 0.1 to 1.0 in increments of 0.01.
-def gather_data(strategy_sim, difference, beta, times, output_file_name, debug_flag):
+def gather_data(strategy_sim, difference, beta, times, output_file_name, debug_flag, num_cores):
   distributions = np.zeros((100, n+1))
 
   for num in range(1, 100): # multiples of 1/100
@@ -80,7 +80,7 @@ def gather_data(strategy_sim, difference, beta, times, output_file_name, debug_f
       iteration += 1
       if debug_flag: print("Lambda: ", l)
 
-      bestF = simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag)
+      bestF = simulate(alpha, beta, l, strategy_sim, difference, times, debug_flag, num_cores)
       reward = np.average(bestF)
 
       if debug_flag: print("Reward for ", l, ": ", reward)
@@ -214,7 +214,7 @@ def main():
   elif args.gather_data:
     print("GATHER DATA")
     print("output file name:", args.output_file)
-    gather_data(strategy_sim=sim, difference=0.01, beta=args.b, times=4, output_file_name=args.output_file, debug_flag=True)
+    gather_data(strategy_sim=sim, difference=0.01, beta=args.b, times=4, output_file_name=args.output_file, debug_flag=True, num_cores=args.cores )
   else:
     run_once(args.alpha, beta=args.b, l=args.l, difference=0.01, times=4, debug_flag=True, sim=sim, cores=args.cores)
 
